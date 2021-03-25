@@ -1,0 +1,45 @@
+version: '3.5'
+networks:
+   chat-network:
+services:
+    nginx:
+       container_name: nginx
+       command: nginx
+       image: medovayalapa/chat-bot-nginx-server
+       ports:
+        - 80:80
+        - 443:443
+       links:
+        - chatbot
+       depends_on:
+        - chatbot
+    redis:
+       container_name: redis
+       image: redis
+       ports:
+        - 6379:6379
+    engine:
+       container_name: engine
+       image: medovayalapa/chat-bot-task-sheduler
+       environment:
+         - REDIS_HOST=redis
+         - REDIS_PORT=6379
+         - REDIS_DB=0
+         - API_TOKEN=yourkey
+         - BASE_URL=https://api.telegram.org/bot
+       depends_on:
+        - redis
+    chatbot:
+       image: medovayalapa/task-notify-chat-bot
+       command: gunicorn app.app:create_app --bind chatbot:8080 --worker-class aiohttp.GunicornWebWorker
+       container_name: chatbot
+       environment:
+         - HOST=yourdomain
+         - PRODUCTION=1
+         - REDIS_HOST=redis
+         - REDIS_PORT=6379
+         - REDIS_DB=0
+         - API_TOKEN=yourkey
+         - BASE_URL=https://api.telegram.org/bot
+       ports:
+         - 8080:8080
